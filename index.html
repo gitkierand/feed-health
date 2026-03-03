@@ -84,6 +84,18 @@
       margin-bottom: 16px;
       height: 20px;
     }
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.sortable:hover { color: #999; }
+    th.sortable::after {
+      content: " ↕";
+      font-size: 0.65rem;
+      opacity: 0.4;
+    }
+    th.sort-asc::after { content: " ↑"; opacity: 1; }
+    th.sort-desc::after { content: " ↓"; opacity: 1; }
   </style>
 </head>
 <body>
@@ -94,7 +106,7 @@
       <tr>
         <th>Feed</th>
         <th>Latest Headline</th>
-        <th>Published</th>
+        <th class="sortable" id="sort-date">Published</th>
       </tr>
     </thead>
     <tbody id="results"></tbody>
@@ -345,13 +357,33 @@
         const isStale = pubDate && (Date.now() - pubTime > 48 * 60 * 60 * 1000);
 
         if (isStale) row.classList.add("stale");
+        row.dataset.timestamp = pubTime || 0;
 
         row.children[1].innerHTML = `<span class="item-title">${title}</span>`;
         row.children[2].innerHTML = `<span class="item-date">${pubDate ? formatDate(pubDate) : "—"}</span>`;
       } catch (err) {
         row.children[1].innerHTML = `<span class="error">Error: ${err.message}</span>`;
+        row.dataset.timestamp = 0;
       }
       updateStatus();
+    });
+
+    // Sort by publish date
+    let sortDir = 0; // 0 = unsorted, 1 = asc (oldest first), -1 = desc (newest first)
+    const sortBtn = document.getElementById("sort-date");
+
+    sortBtn.addEventListener("click", () => {
+      sortDir = sortDir === 1 ? -1 : 1;
+      sortBtn.classList.toggle("sort-asc", sortDir === 1);
+      sortBtn.classList.toggle("sort-desc", sortDir === -1);
+
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      rows.sort((a, b) => {
+        const ta = Number(a.dataset.timestamp) || 0;
+        const tb = Number(b.dataset.timestamp) || 0;
+        return sortDir === 1 ? ta - tb : tb - ta;
+      });
+      rows.forEach(r => tbody.appendChild(r));
     });
   </script>
 </body>
