@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feed Health</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      background: #111113;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 1.1rem;
+      color: #6b6b75;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: #1a1a1f;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2a2a30;
+    }
+    th {
+      text-align: left;
+      padding: 14px 20px;
+      background: #16161a;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #55555f;
+      font-weight: 600;
+      border-bottom: 1px solid #2a2a30;
+    }
+    td {
+      padding: 14px 20px;
+      border-bottom: 1px solid #222228;
+      font-size: 0.88rem;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.15s ease; }
+    tbody tr:hover { background: #1f1f26; }
+    .feed-name {
+      width: 200px;
+      max-width: 200px;
+      color: #7a7a88;
+      font-size: 0.82rem;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .item-title {
+      font-weight: 500;
+      color: #d8d8dd;
+    }
+    .item-date {
+      white-space: nowrap;
+      color: #6a6a75;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .error { color: #e85555; }
+    tr.stale td { background: rgba(200, 40, 40, 0.15); }
+    tr.stale:hover td { background: rgba(200, 40, 40, 0.22); }
+    tr.stale .item-date { color: #e85555; }
+    .loading { color: #444450; }
+    #status {
+      font-size: 0.82rem;
+      color: #55555f;
+      margin-bottom: 16px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Feed Health</h1>
+  <div id="status">Loading feeds…</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Feed</th>
+        <th>Latest Headline</th>
+        <th>Published</th>
+      </tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
+
+  <script>
+    const FEEDS = [
+      "https://feeds.presspublish.io/itv/Politics.rss",
+      "https://feeds.presspublish.io/itv/World.rss",
+      "https://feeds.presspublish.io/itv/apple-news.rss",
+      "https://feeds.presspublish.io/itv/newsbreak.rss",
+      "https://feeds.presspublish.io/itv/opera-news.rss",
+      "https://feeds.presspublish.io/itv/pinterest.rss",
+      "https://feeds.presspublish.io/itv/samsung-news.rss",
+      "https://feeds.presspublish.io/itv/smartnews.rss",
+      "https://feeds.presspublish.io/itv/truncated.rss",
+      "https://feeds.presspublish.io/premier-league-fantasy/apple-news.rss",
+      "https://feeds.presspublish.io/premier-league-fantasy/newsbreak.rss",
+      "https://feeds.presspublish.io/premier-league-fantasy/opera-news.rss",
+      "https://feeds.presspublish.io/premier-league-fantasy/pinterest.rss",
+      "https://feeds.presspublish.io/premier-league-fantasy/smartnews.rss",
+      "https://feeds.presspublish.io/premier-league-fantasy/truncated.rss",
+      "https://feeds.presspublish.io/premier-league/apple-news.rss",
+      "https://feeds.presspublish.io/premier-league/newsbreak.rss",
+      "https://feeds.presspublish.io/premier-league/opera-news.rss",
+      "https://feeds.presspublish.io/premier-league/pinterest.rss",
+      "https://feeds.presspublish.io/premier-league/smartnews.rss",
+      "https://feeds.presspublish.io/premier-league/truncated.rss",
+      "https://feeds.presspublish.io/marketbeat/apple-news.rss",
+      "https://feeds.presspublish.io/marketbeat/dividends.rss",
+      "https://feeds.presspublish.io/marketbeat/earnings.rss",
+      "https://feeds.presspublish.io/marketbeat/healthcare.rss",
+      "https://feeds.presspublish.io/marketbeat/newsbreak.rss",
+      "https://feeds.presspublish.io/marketbeat/opera-news.rss",
+      "https://feeds.presspublish.io/marketbeat/pinterest.rss",
+      "https://feeds.presspublish.io/marketbeat/retail.rss",
+      "https://feeds.presspublish.io/marketbeat/smartnews.rss",
+      "https://feeds.presspublish.io/marketbeat/stock-tips.rss",
+      "https://feeds.presspublish.io/marketbeat/technology.rss",
+      "https://feeds.presspublish.io/marketbeat/truncated.rss",
+      "https://feeds.presspublish.io/middle-east-eye/apple-news.rss",
+      "https://feeds.presspublish.io/middle-east-eye/newsbreak.rss",
+      "https://feeds.presspublish.io/middle-east-eye/opera-news.rss",
+      "https://feeds.presspublish.io/middle-east-eye/pinterest.rss",
+      "https://feeds.presspublish.io/middle-east-eye/smartnews.rss",
+      "https://feeds.presspublish.io/middle-east-eye/truncated.rss",
+      "https://feeds.presspublish.io/formula1/apple-news.rss",
+      "https://feeds.presspublish.io/formula1/newsbreak.rss",
+      "https://feeds.presspublish.io/formula1/opera-news.rss",
+      "https://feeds.presspublish.io/formula1/pinterest.rss",
+      "https://feeds.presspublish.io/formula1/smartnews.rss",
+      "https://feeds.presspublish.io/formula1/truncated.rss",
+      "https://feeds.presspublish.io/fifa/apple-news.rss",
+      "https://feeds.presspublish.io/fifa/newsbreak.rss",
+      "https://feeds.presspublish.io/fifa/opera-news.rss",
+      "https://feeds.presspublish.io/fifa/pinterest.rss",
+      "https://feeds.presspublish.io/fifa/smartnews.rss",
+      "https://feeds.presspublish.io/fifa/truncated.rss",
+      "https://feeds.presspublish.io/osg-game-and-fish/apple-news.rss",
+      "https://feeds.presspublish.io/osg-game-and-fish/newsbreak.rss",
+      "https://feeds.presspublish.io/osg-game-and-fish/opera-news.rss",
+      "https://feeds.presspublish.io/osg-game-and-fish/pinterest.rss",
+      "https://feeds.presspublish.io/osg-game-and-fish/smartnews.rss",
+      "https://feeds.presspublish.io/osg-game-and-fish/truncated.rss",
+      "https://feeds.presspublish.io/osg-gun-dog/apple-news.rss",
+      "https://feeds.presspublish.io/osg-gun-dog/newsbreak.rss",
+      "https://feeds.presspublish.io/osg-gun-dog/opera-news.rss",
+      "https://feeds.presspublish.io/osg-gun-dog/pinterest.rss",
+      "https://feeds.presspublish.io/osg-gun-dog/smartnews.rss",
+      "https://feeds.presspublish.io/osg-gun-dog/truncated.rss",
+      "https://feeds.presspublish.io/osg-fly-fisherman/apple-news.rss",
+      "https://feeds.presspublish.io/osg-fly-fisherman/newsbreak.rss",
+      "https://feeds.presspublish.io/osg-fly-fisherman/opera-news.rss",
+      "https://feeds.presspublish.io/osg-fly-fisherman/pinterest.rss",
+      "https://feeds.presspublish.io/osg-fly-fisherman/smartnews.rss",
+      "https://feeds.presspublish.io/osg-fly-fisherman/truncated.rss",
+      "https://feeds.presspublish.io/north-american-whitetail/apple-news.rss",
+      "https://feeds.presspublish.io/north-american-whitetail/newsbreak.rss",
+      "https://feeds.presspublish.io/north-american-whitetail/opera-news.rss",
+      "https://feeds.presspublish.io/north-american-whitetail/pinterest.rss",
+      "https://feeds.presspublish.io/north-american-whitetail/smartnews.rss",
+      "https://feeds.presspublish.io/north-american-whitetail/truncated.rss",
+      "https://feeds.presspublish.io/osg-petersens-hunting/apple-news.rss",
+      "https://feeds.presspublish.io/osg-petersens-hunting/newsbreak.rss",
+      "https://feeds.presspublish.io/osg-petersens-hunting/opera-news.rss",
+      "https://feeds.presspublish.io/osg-petersens-hunting/pinterest.rss",
+      "https://feeds.presspublish.io/osg-petersens-hunting/smartnews.rss",
+      "https://feeds.presspublish.io/osg-petersens-hunting/truncated.rss",
+      "https://feeds.presspublish.io/udiscovermusic/apple-news.rss",
+      "https://feeds.presspublish.io/udiscovermusic/newsbreak.rss",
+      "https://feeds.presspublish.io/udiscovermusic/opera-news.rss",
+      "https://feeds.presspublish.io/udiscovermusic/pinterest.rss",
+      "https://feeds.presspublish.io/udiscovermusic/smartnews.rss",
+      "https://feeds.presspublish.io/udiscovermusic/truncated.rss",
+      "https://feeds.presspublish.io/sandwich/apple-news.rss",
+      "https://feeds.presspublish.io/sandwich/newsbreak.rss",
+      "https://feeds.presspublish.io/sandwich/opera-news.rss",
+      "https://feeds.presspublish.io/sandwich/pinterest.rss",
+      "https://feeds.presspublish.io/sandwich/smartnews.rss",
+      "https://feeds.presspublish.io/sandwich/truncated.rss",
+      "https://feeds.presspublish.io/osg-bowhunter/apple-news.rss",
+      "https://feeds.presspublish.io/osg-bowhunter/newsbreak.rss",
+      "https://feeds.presspublish.io/osg-bowhunter/opera-news.rss",
+      "https://feeds.presspublish.io/osg-bowhunter/pinterest.rss",
+      "https://feeds.presspublish.io/osg-bowhunter/smartnews.rss",
+      "https://feeds.presspublish.io/osg-bowhunter/truncated.rss",
+      "https://feeds.presspublish.io/osg-wildfowl/apple-news.rss",
+      "https://feeds.presspublish.io/osg-wildfowl/newsbreak.rss",
+      "https://feeds.presspublish.io/osg-wildfowl/opera-news.rss",
+      "https://feeds.presspublish.io/osg-wildfowl/pinterest.rss",
+      "https://feeds.presspublish.io/osg-wildfowl/smartnews.rss",
+      "https://feeds.presspublish.io/osg-wildfowl/truncated.rss",
+      "https://feeds.presspublish.io/fifa-world-cup/flipboard.rss",
+      "https://feeds.presspublish.io/outside/apple-news.rss",
+      "https://feeds.presspublish.io/outside/msn-news.rss",
+      "https://feeds.presspublish.io/outside/newsbreak.rss",
+      "https://feeds.presspublish.io/outside/opera-news.rss",
+      "https://feeds.presspublish.io/outside/pinterest.rss",
+      "https://feeds.presspublish.io/outside/smartnews.rss",
+      "https://feeds.presspublish.io/outside/truncated.rss",
+      "https://feeds.presspublish.io/outside/upday.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/apple-news.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/newsbreak.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/opera-news.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/pinterest.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/samsung-news.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/smartnews.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/truncated.rss",
+      "https://feeds.presspublish.io/advance-local-masslive-com/yahoo.rss",
+      "https://feeds.presspublish.io/advance-local-lehighvalleylive-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-nj-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-cleveland-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-oregonlive-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-pennlive-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-syracuse-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-al-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-mlive-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-silive-com/nextdoor.rss",
+      "https://feeds.presspublish.io/advance-local-nyup-com/nextdoor.rss",
+      "https://feeds.presspublish.io/fifa-womens-world-cup/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-mens-club-world-cup/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-club-world-cup-2025-fantasy/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-club-world-cup-2025-fantasy-es/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-club-world-cup-2025-fantasy-de/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-club-world-cup-2025-fantasy-it/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-club-world-cup-2025-fantasy-pt/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-club-world-cup-2025-fantasy-ja/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-club-world-cup-2025-fantasy-fr/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-mens-club-world-cup-es/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-mens-club-world-cup-de/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-mens-club-world-cup-it/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-mens-club-world-cup-ja/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-mens-club-world-cup-fr/flipboard.rss",
+      "https://feeds.presspublish.io/fifa-mens-club-world-cup-pt/flipboard.rss",
+      "https://feeds.presspublish.io/the-face/the-face_samsung-news-default.rss",
+      "https://feeds.presspublish.io/kerrang/kerrang_samsung-news-default.rss",
+      "https://feeds.presspublish.io/mixmag/mixmag_samsung-news-default.rss",
+      "https://feeds.presspublish.io/masslive/masslive_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/itv/itv_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv/itv_samsung-news-politics.rss",
+      "https://feeds.presspublish.io/itv/itv_samsung-news-world.rss",
+      "https://feeds.presspublish.io/itv/itv_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-cleveland/advance-local-cleveland_samsung-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-cleveland/advance-local-cleveland_smart-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-oregonlive/advance-local-oregonlive_samsung-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-oregonlive/advance-local-oregonlive_smart-news-default.rss",
+      "https://feeds.presspublish.io/itv-utv/itv-utv_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-anglia/itv-anglia_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-border/itv-border_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-calendar/itv-calendar_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-central/itv-central_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-channel/itv-channel_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-granada/itv-granada_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-london/itv-london_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-meridian/itv-meridian_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-tyne-tees/itv-tyne-tees_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-wales/itv-wales_samsung-news-default.rss",
+      "https://feeds.presspublish.io/itv-westcountry/itv-westcountry_samsung-news-default.rss",
+      "https://feeds.presspublish.io/morningstar-au/morningstar-au_apple-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-nj-com/advance-local-nj-com_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-cleveland-yahoo-news/advance-local-cleveland-yahoo-news_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-al-yahoo-news/advance-local-al-yahoo-news_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-mlive-yahoo-news/advance-local-mlive-yahoo-news_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-si-live/advance-local-si-live_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-syracuse/advance-local-syracuse_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-oregon-live-yahoo-news/advance-local-oregon-live-yahoo-news_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-lehigh-valley-live/advance-local-lehigh-valley-live_yahoo-news-default.rss",
+      "https://feeds.presspublish.io/advance-local-pennlive/advance-local-pennlive_yahoo-news-default.rss",
+    ];
+
+    function feedLabel(url) {
+      const parts = new URL(url).pathname.replace(/\.rss$/, "").split("/").filter(Boolean);
+      return parts.join(" / ");
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+        + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    const tbody = document.getElementById("results");
+
+    const statusEl = document.getElementById("status");
+    let loaded = 0;
+    statusEl.textContent = `Loading 0 / ${FEEDS.length} feeds…`;
+
+    function updateStatus() {
+      loaded++;
+      if (loaded < FEEDS.length) {
+        statusEl.textContent = `Loading ${loaded} / ${FEEDS.length} feeds…`;
+      } else {
+        statusEl.textContent = `All ${FEEDS.length} feeds loaded.`;
+      }
+    }
+
+    // Render placeholder rows
+    FEEDS.forEach(url => {
+      const tr = document.createElement("tr");
+      tr.id = "row-" + encodeURIComponent(url);
+      tr.innerHTML =
+        `<td class="feed-name">${feedLabel(url)}</td>` +
+        `<td class="loading">—</td>` +
+        `<td></td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Fetch all feeds in parallel
+    FEEDS.forEach(async (url) => {
+      const row = document.getElementById("row-" + encodeURIComponent(url));
+      try {
+        const res = await fetch("/feed?url=" + encodeURIComponent(url));
+        const text = await res.text();
+        const xml = new DOMParser().parseFromString(text, "application/xml");
+
+        const item = xml.querySelector("item");
+        if (!item) {
+          row.children[1].innerHTML = '<span class="error">No items</span>';
+          updateStatus();
+          return;
+        }
+
+        const title = item.querySelector("title")?.textContent ?? "Untitled";
+        const pubDate = item.querySelector("pubDate")?.textContent ?? "";
+        const pubTime = new Date(pubDate).getTime();
+        const isStale = pubDate && (Date.now() - pubTime > 48 * 60 * 60 * 1000);
+
+        if (isStale) row.classList.add("stale");
+
+        row.children[1].innerHTML = `<span class="item-title">${title}</span>`;
+        row.children[2].innerHTML = `<span class="item-date">${pubDate ? formatDate(pubDate) : "—"}</span>`;
+      } catch (err) {
+        row.children[1].innerHTML = `<span class="error">Error: ${err.message}</span>`;
+      }
+      updateStatus();
+    });
+  </script>
+</body>
+</html>
