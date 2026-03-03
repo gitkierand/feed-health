@@ -6,8 +6,8 @@ const path = require("path");
 const PORT = 3000;
 
 http.createServer((req, res) => {
-  if (req.url.startsWith("/feed?url=")) {
-    const feedUrl = decodeURIComponent(req.url.replace("/feed?url=", ""));
+  if (req.url.startsWith("/api/feed?url=")) {
+    const feedUrl = decodeURIComponent(req.url.replace("/api/feed?url=", ""));
     https.get(feedUrl, (feedRes) => {
       res.writeHead(200, { "Content-Type": "application/xml", "Access-Control-Allow-Origin": "*" });
       feedRes.pipe(res);
