@@ -54,14 +54,21 @@
     tbody tr { transition: background 0.15s ease; }
     tbody tr:hover { background: #1f1f26; }
     .feed-name {
-      width: 200px;
-      max-width: 200px;
-      color: #7a7a88;
+      width: 300px;
+      max-width: 300px;
       font-size: 0.82rem;
       font-weight: 500;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .feed-name a {
+      color: #7a7a88;
+      text-decoration: none;
+    }
+    .feed-name a:hover {
+      color: #aaa;
+      text-decoration: underline;
     }
     .item-title {
       font-weight: 500;
@@ -140,11 +147,11 @@
       cursor: pointer;
       user-select: none;
     }
-    th.sortable:hover { color: #999; }
+    th.sortable:hover { color: #bbb; text-decoration: underline; }
     th.sortable::after {
       content: " ↕";
-      font-size: 0.65rem;
-      opacity: 0.4;
+      font-size: 0.75rem;
+      opacity: 0.6;
     }
     th.sort-asc::after { content: " ↑"; opacity: 1; }
     th.sort-desc::after { content: " ↓"; opacity: 1; }
@@ -415,7 +422,7 @@
       const tr = document.createElement("tr");
       tr.id = "row-" + encodeURIComponent(url);
       tr.innerHTML =
-        `<td class="feed-name">${feedLabel(url)}</td>` +
+        `<td class="feed-name"><a href="${url}" target="_blank" rel="noopener">${feedLabel(url)}</a></td>` +
         `<td class="loading">—</td>` +
         `<td></td>`;
       tbody.appendChild(tr);
