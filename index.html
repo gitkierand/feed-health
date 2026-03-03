@@ -84,6 +84,58 @@
       margin-bottom: 16px;
       height: 20px;
     }
+    #auth-gate {
+      position: fixed;
+      inset: 0;
+      background: #111113;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #auth-gate.hidden { display: none; }
+    #auth-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    #auth-form label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #55555f;
+      font-weight: 600;
+    }
+    #auth-form input {
+      background: #1a1a1f;
+      border: 1px solid #2a2a30;
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #e0e0e0;
+      font-size: 0.9rem;
+      width: 240px;
+      outline: none;
+      font-family: inherit;
+    }
+    #auth-form input:focus { border-color: #444; }
+    #auth-form button {
+      background: #2a2a30;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 24px;
+      color: #ccc;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    #auth-form button:hover { background: #353540; }
+    #auth-error {
+      color: #e85555;
+      font-size: 0.82rem;
+      height: 20px;
+    }
+    #app { display: none; }
     th.sortable {
       cursor: pointer;
       user-select: none;
@@ -99,6 +151,15 @@
   </style>
 </head>
 <body>
+  <div id="auth-gate">
+    <form id="auth-form" onsubmit="return handleLogin(event)">
+      <label for="pw">Password</label>
+      <input type="password" id="pw" autofocus placeholder="Enter password">
+      <button type="submit">Continue</button>
+      <div id="auth-error"></div>
+    </form>
+  </div>
+  <div id="app">
   <h1>Feed Health</h1>
   <div id="status">Loading feeds…</div>
   <table>
@@ -112,7 +173,31 @@
     <tbody id="results"></tbody>
   </table>
 
+  </div>
+
   <script>
+    function handleLogin(e) {
+      e.preventDefault();
+      if (document.getElementById("pw").value === "flatplan99") {
+        sessionStorage.setItem("feed-health-auth", "1");
+        unlock();
+      } else {
+        document.getElementById("auth-error").textContent = "Incorrect password";
+      }
+      return false;
+    }
+
+    function unlock() {
+      document.getElementById("auth-gate").classList.add("hidden");
+      document.getElementById("app").style.display = "block";
+      loadFeeds();
+    }
+
+    if (sessionStorage.getItem("feed-health-auth") === "1") {
+      unlock();
+    }
+
+    function loadFeeds() {
     const FEEDS = [
       "https://feeds.presspublish.io/itv/Politics.rss",
       "https://feeds.presspublish.io/itv/World.rss",
@@ -385,6 +470,7 @@
       });
       rows.forEach(r => tbody.appendChild(r));
     });
+    }
   </script>
 </body>
 </html>
